@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>listen</title>
+  <script src="../libs/ipfs.js"></script>
+</head>
+
+<body>
+  <script src="../libs/nacl_factory.js"></script>
+  <label for="playlist">playlist:</label><input type="text" id="playlist"></input>
+  <br>
+  <label for="password">password:</label><input type="text" id="password"></input>
+  <br>
+  <label for="random-bytes">random bytes:</label><input type="text" id="random-bytes"></input>
+  <br>
+  <button onclick="startPlaylist()">Start</button>
+  <br>
+  <audio id="audio-play" controls></audio>
+  <script>
+    let node;
+    async function node_init() {
+      node = await Ipfs.create();
+    }
+    window.onload = function() {
+      node_init();
+    }
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    async function startPlaylist() {
+      //get playlist
+      let playlist = document.getElementById("playlist").value.split(',');
+      //true randomness not needed
+      playlist.sort(function(){return 0.5-Math.random()});
+      for (let i=0; i < playlist.length; i++) {
+        let length = await listen(playlist[i]);
+        console.log(length)
+        await sleep(length);
+      }
+    }
+    async function listen(ipfs_hash) {
+      let password = document.getElementById("password").value;
+      let random_bytes = Uint8Array.from(JSON.parse(document.getElementById("random-bytes").value));
+      //get file from hash (ipfs), put into bytes
+      let chunks = [];
+      for await (const chunk of node.cat(ipfs_hash)) {
+        chunks.push(...chunk);
+      }
+      let bytes = new Uint8Array(chunks);
+      //let bytes = new Uint8Array(await document.getElementById("file-upload").files[0].arrayBuffer());
+      //decrypt audio
+      nacl_factory.instantiate(function (nacl) {
+        let key = nacl.crypto_hash_string(password).slice(32);
+        bytes = nacl.crypto_secretbox_open(bytes, random_bytes, key);
+        //play audio
+        let audio_ele = document.getElementById("audio-play");
+        let audio = new Blob([bytes], {type: "audio/mpeg3"});
+        let a_buf = await (new window.AudioContext).decodeAudioData(bytes.buffer);
+        audio_ele.src = URL.createObjectURL(audio);
+        return Math.ceil(a_buf.duration)*1000;
+      });
+    }
+  </script>
+</body>
+
+</html>
