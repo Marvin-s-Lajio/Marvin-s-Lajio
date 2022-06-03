@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>tools</title>
+</head>
+
+<body>
+  <script src="../libs/nacl_factory.js"></script>
+  <button onclick="generate_random_bytes()">generate random bytes</button>
+  <br>
+  <span id="bytes-container"></span>
+  <script>
+    function generate_random_bytes() {
+      nacl_factory.instantiate(function (nacl) {
+        document.getElementById("bytes-container").innerText = JSON.stringify(Array.from(nacl.random_bytes(24)));
+      });
+    }
+  </script>
+</body>
+
+</html>

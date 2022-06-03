@@ -18,7 +18,7 @@
   <br>
   <button onclick="startPlaylist()">Start</button>
   <br>
-  <audio id="audio-play" controls></audio>
+  <audio id="audio-play" controls autoplay></audio>
   <script>
     let node;
     async function node_init() {
@@ -52,16 +52,16 @@
       let bytes = new Uint8Array(chunks);
       //let bytes = new Uint8Array(await document.getElementById("file-upload").files[0].arrayBuffer());
       //decrypt audio
-      nacl_factory.instantiate(function (nacl) {
-        let key = nacl.crypto_hash_string(password).slice(32);
-        bytes = nacl.crypto_secretbox_open(bytes, random_bytes, key);
-        //play audio
-        let audio_ele = document.getElementById("audio-play");
-        let audio = new Blob([bytes], {type: "audio/mpeg3"});
-        let a_buf = await (new window.AudioContext).decodeAudioData(bytes.buffer);
-        audio_ele.src = URL.createObjectURL(audio);
-        return Math.ceil(a_buf.duration)*1000;
-      });
+      //we need to pass a callback function (otherwise it errors). nacl is the nacl object
+      let nacl = await nacl_factory.instantiate(function (nacl) {});
+      let key = nacl.crypto_hash_string(password).slice(32);
+      bytes = nacl.crypto_secretbox_open(bytes, random_bytes, key);
+      //play audio
+      let audio_ele = document.getElementById("audio-play");
+      let audio = new Blob([bytes], {type: "audio/mpeg3"});
+      let a_buf = await (new window.AudioContext).decodeAudioData(bytes.buffer);
+      audio_ele.src = URL.createObjectURL(audio);
+      return Math.ceil(a_buf.duration)*1000;
     }
   </script>
 </body>
