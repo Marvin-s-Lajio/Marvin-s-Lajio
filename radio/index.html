@@ -14,6 +14,8 @@
   <br>
   <label for="password">password:</label><input type="text" id="password"></input>
   <br>
+  <label for="random-bytes">random bytes:</label><input type="text" id="random-bytes"></input>
+  <br>
   <label for="order">order:</label><input type="text" id="order"></input>
   <br>
   <label for="start">start:</label><input type="text" id="start"></input>
@@ -21,6 +23,8 @@
   <button onclick="playRadio()">Tune in</button>
   <br>
   <audio id="audio-play" controls></audio>
+  <br>
+  <p style="display: none;" id="timestamp-container">Start timestamp: <span id="timestamp"></span></p>
   <script>
     let node;
     async function node_init() {
@@ -35,7 +39,7 @@
     function playRadio() {
       let password = document.getElementById("password").value;
       let playlist = document.getElementById("playlist").value.split(",");
-      let order = document.getElementById("order").value;
+      let order = document.getElementById("order").value.split(",");
       let start = document.getElementById("start").value;
       let random_bytes = Uint8Array.from(JSON.parse(document.getElementById("random-bytes").value));
       //order the files
@@ -47,7 +51,7 @@
       nacl_factory.instantiate(async function (nacl) {
         //load up files for each song
         let audios = [];
-        for (let j=0; k < playlist.length; j++) {
+        for (let j=0; j < playlist.length; j++) {
           let ipfs_hash = playlist[j];
           //get file from hash (ipfs), put into bytes
           let chunks = [];
@@ -57,16 +61,19 @@
           let bytes = new Uint8Array(chunks);
           let key = nacl.crypto_hash_string(password).slice(32);
           bytes = nacl.crypto_secretbox_open(bytes, random_bytes, key);
-          //play audio
-          let audio = new Blob([bytes], {type: "audio/mpeg3"});
+          let audio_blob = new Blob([bytes], {type: "audio/mpeg3"});
           let a_buf = await (new window.AudioContext).decodeAudioData(bytes.buffer);
           duration = Math.ceil(a_buf.duration)*1000;
-          audios.push([a_buf, duration]);
+          //0: buffer, 1: duration (seconds), 2: blob
+          audios.push([a_buf, duration, audio_blob]);
         }
         //get current song based on order and time
         let current_time = new Date().getTime(); //in milliseconds
         if (start === "now") {
           start = current_time;
+          //tell user what the time is so they can share
+          document.getElementById("timestamp").innerText = current_time;
+          document.getElementById("timestamp-container").style.display = "block";
         }
         let difference = start-current_time;
         let c_length = 0;
@@ -84,12 +91,13 @@
         let current_song_start = (c_length - audios[current_song][1]*1000) + start;
         let current_song_location = (current_time - current_song_start)/1000;
         let audio_ele = document.getElementById("audio-play");
-        audio_ele.src = URL.createObjectURL(audios[current_song][0]);
-        audio_ele.currentSrc = current_song_location;
+        //only blob can be passed in createObjectURL, not buffer
+        audio_ele.src = URL.createObjectURL(audios[current_song][2]);
+        audio_ele.currentTime = current_song_location;
         //ensure next song gets played
         await sleep(audios[current_song][1]*1000);
         for (let l=current_song+1; l < audios.length; l++) {
-          audio_ele.src = URL.createObjectURL(audios[l][0]);
+          audio_ele.src = URL.createObjectURL(audios[l][2]);
           await sleep(audios[l][1]*1000);
         }
       });
