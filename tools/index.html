@@ -12,11 +12,25 @@
   <button onclick="generate_random_bytes()">generate random bytes</button>
   <br>
   <span id="bytes-container"></span>
+  <br>
+  <input type="number" id="song-num"></input>
+  <button onclick="generate_random_order()">generate randomish order</button>
+  <br>
+  <span id="order-container"></span>
   <script>
     function generate_random_bytes() {
       nacl_factory.instantiate(function (nacl) {
         document.getElementById("bytes-container").innerText = JSON.stringify(Array.from(nacl.random_bytes(24)));
       });
+    }
+    function generate_random_order() {
+      let song_num = document.getElementById("song-num").value;
+      let numbers_array = [];
+      for (let i=0; i < song_num; i++) {
+        numbers_array.push(i);
+      }
+      numbers_array.sort(function() {return Math.random() - 0.5});
+      document.getElementById("order-container").innerText = numbers_array.join(",");
     }
   </script>
 </body>

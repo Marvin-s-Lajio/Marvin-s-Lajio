@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width">
-  <title>listen</title>
+  <title>single</title>
 </head>
 
 <body>
@@ -27,7 +27,6 @@
       //decrypt audio
       nacl_factory.instantiate(function (nacl) {
         let key = nacl.crypto_hash_string(password).slice(32);
-        console.log(bytes, random_bytes, key)
         bytes = nacl.crypto_secretbox_open(bytes, random_bytes, key);
         //play audio
         let audio = new Blob([bytes], {type: "audio/mpeg3"});

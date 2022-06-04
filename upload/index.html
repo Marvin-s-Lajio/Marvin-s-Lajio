@@ -27,12 +27,9 @@
       let random_bytes = Uint8Array.from(JSON.parse(document.getElementById("random-bytes").value));
       nacl_factory.instantiate(function (nacl) {
         let key = nacl.crypto_hash_string(password).slice(32);
-        console.log(Array.from(nacl.random_bytes(24)))
-        console.log(new Uint8Array(audio))
         let encrypted = nacl.crypto_secretbox(new Uint8Array(audio), random_bytes, key);
         //encrypted = new TextDecoder("utf-8").decode(encrypted);
         //download as text
-        console.log(key, encrypted, random_bytes)
         let a = document.createElement('a');
         a.href = window.URL.createObjectURL(new Blob([encrypted.buffer]));
         a.download = "audio_marvin.mapl";
